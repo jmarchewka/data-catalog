@@ -7,7 +7,7 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
 use AppBundle\Entity\Dataset;
-
+use \Doctrine\Common\Collections\Criteria;
 
 /**
  * A controller that returns the title and slug of a related dataset
@@ -36,7 +36,7 @@ class RelatedDatasetController extends Controller
    * Given a list of related datasets, fetch ones that are publicly-visible,
    * and render a list for display in a dataset record
    *
-   * @param int|string $id A dataset's UID
+   * @param ArrayCollection $relatedDatasets
    *
    * @return Response A Response instance
    */
@@ -47,11 +47,16 @@ class RelatedDatasetController extends Controller
     $datasetsForDisplay = array();
     foreach ($relatedDatasets as $related) {
       // find dataset IF it is published AND not archived
-      $relatedDataset = $em->findOneBy(array(
-                             'dataset_uid' => $related->getRelatedDatasetUid(), 
-                             'published'   => 1,
-                             'archived'    => 0
-                        ));
+
+			$criteria = new Criteria();
+			$criteria->expr()->orX(
+				$criteria->expr()->eq('archived', 0),
+				$criteria->expr()->eq('archived', null)
+			);
+			$criteria->andWhere(Criteria::expr()->eq('dataset_uid', $related->getRelatedDatasetUid()));
+			$criteria->andWhere(Criteria::expr()->eq('published', 1));
+
+      $relatedDataset = $em->matching($criteria)->getValues()[0];
       if ($relatedDataset) {
         $section = array('dataset' => $relatedDataset);
         $notes = $related->getRelationshipNotes();
