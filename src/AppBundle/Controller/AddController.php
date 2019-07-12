@@ -112,6 +112,10 @@ class AddController extends Controller {
     if ($form->isValid()) {
       $dataset = $form->getData();
       
+      if (is_null($dataset->getArchived())) {
+      	$dataset->setArchived(false);
+      }
+
       $addedEntityName = $dataset->getTitle();
       $slug = Slugger::slugify($addedEntityName);
       $dataset->setSlug($slug);
